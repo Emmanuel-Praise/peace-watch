@@ -83,5 +83,18 @@ class Settings(BaseSettings):
     voice_max_bytes: int = 25 * 1024 * 1024
     voice_temp_dir: str = ""
 
+    # --- WhatsApp / Meta Cloud API webhook ---
+    # Public callback URL: https://<your-domain>/api/whatsapp/webhook
+    # "verify token": a secret phrase you share with Meta; must match what
+    # you enter in the Meta developer dashboard (Webhook → Verify token).
+    whatsapp_verify_token: str = "peacewatch"
+    # Optional: Meta App Secret. When set, incoming webhook payloads are
+    # checked against the X-Hub-Signature-256 header (HMAC-SHA256 of the body).
+    whatsapp_app_secret: str = ""
+    # Optional: when both are set, the bot auto-replies to the sender with a
+    # confirmation after each report is ingested.
+    whatsapp_access_token: str = ""
+    whatsapp_phone_number_id: str = ""
+
 
 settings = Settings()

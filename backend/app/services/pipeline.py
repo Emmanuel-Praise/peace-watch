@@ -153,6 +153,7 @@ async def ingest_text(
     anonymous_id: str | None = None,
     sent_at: datetime | None = None,
     language: str = "auto",
+    source: str = "text",
 ) -> IngestResult:
     return await _ingest_text(
         session,
@@ -160,7 +161,7 @@ async def ingest_text(
         anonymous_id=anonymous_id,
         occurred_at=sent_at or utcnow(),
         language=language,
-        source="text",
+        source=source,
     )
 
 

@@ -169,6 +169,52 @@ git push
 
 ---
 
+# STEP 6 — Connect WhatsApp / Meta (optional, very cool)
+
+## 📞 Your callback URL (what Meta needs)
+
+Put this exact URL in the Meta developer dashboard:
+
+```
+https://peace-watch-backend.onrender.com/api/whatsapp/webhook
+```
+
+**Verify token:** `peacewatch`
+
+> If you ever change the token, set `WHATSAPP_VERIFY_TOKEN` in Render →
+> Environment → **Save Changes** (auto-redeploys), and use the **same string**
+> in Meta.
+
+## 🔌 How to connect it (about 5 minutes)
+
+1. Go to **https://developers.facebook.com** → **My Apps** → **Create App**
+   (choose *Business* as the type) → name it → **Create**.
+2. Add the **WhatsApp** product to your app.
+3. In **WhatsApp → API Setup** you'll find a **test phone number**, a
+   temporary **Access Token**, and a **Phone number ID**. Add them to Render:
+   - Render → your service → **Environment** tab:
+     - `WHATSAPP_ACCESS_TOKEN` = the token from Meta
+     - `WHATSAPP_PHONE_NUMBER_ID` = the phone number ID
+     - (optional) `WHATSAPP_APP_SECRET` = from **App Settings → Basic**
+   - Click **Save Changes** (this redeploys the backend).
+4. In the WhatsApp product settings, find **Configuration → Webhook → Edit**:
+   - **Callback URL:** the URL above
+   - **Verify token:** `peacewatch`
+   - Click **Verify and save** → the backend answers Meta's handshake (the
+     `?hub.…` GET request) automatically. ✅
+5. **Subscribe** to the **`messages`** field (required to receive reports).
+6. Add **your own phone number** as a test recipient (up to 5 on the free
+   test setup), then send the test number a WhatsApp message like:
+   *"Armed robbery on Oxford Street, two men near the bus stop."*
+7. Open `https://peace-watch-backend.onrender.com/api/overview` — your report
+   is live! If you configured `WHATSAPP_ACCESS_TOKEN`, the bot auto-replies
+   with a confirmation. 🪄
+
+> ⚠️ Meta's **test phone number can only message numbers you added** as
+> recipients — that's normal and free. Production numbers need app review.
+
+---
+
 # 🚑 Quick troubleshooting
 
 | Problem | Fix |
@@ -178,6 +224,8 @@ git push
 | `/api/health` works but dashboard shows errors | Check `CORS_ALLOW_ALL=true` in Environment tab, save |
 | Voice/audio upload fails | Expected on the free 512 MB instance — use text reports |
 | Changed `backend\.env`, website unchanged | Website uses Render's **Environment** tab, not your local `.env` |
+| WhatsApp verification fails | Verify token must equal `WHATSAPP_VERIFY_TOKEN` (default `peacewatch`); webhook must be HTTPS |
+| WhatsApp messages don't create reports | Make sure you **subscribed to the `messages` field** in Meta after verifying |
 | Build fails | Render → **Manual Deploy** → **Clear build cache & deploy** |
 
 ---
