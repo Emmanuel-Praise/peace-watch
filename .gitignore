@@ -32,6 +32,9 @@ backend/peacewatch.db
 backend/uploads/
 backend/tmp/
 
+# Scratch notes file that once contained real API keys (never re-add it)
+file1111.txt
+
 # --- Node / frontend --------------------------------------------
 frontend/node_modules/
 frontend/dist/
