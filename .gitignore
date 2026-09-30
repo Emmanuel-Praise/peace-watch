@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------
+# Peace-Watch: files that must NEVER be uploaded to GitHub
+# ---------------------------------------------------------------
+
+# --- Secrets ---------------------------------------------------
+# backend/.env contains your real API keys (OpenRouter, NVIDIA, ...).
+# It is used ONLY on your own computer for local development.
+.env
+*.env
+!.env.example
+
+# --- Python / backend -------------------------------------------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local database files (the cloud version uses PostgreSQL on Neon)
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/*.sqlite-journal
+backend/peacewatch.db
+
+# Uploads / temp
+backend/uploads/
+backend/tmp/
+
+# --- Node / frontend --------------------------------------------
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# --- OS / editor -------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
