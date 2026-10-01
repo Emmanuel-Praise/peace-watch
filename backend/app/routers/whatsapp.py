@@ -211,6 +211,138 @@ def _thanks_reply() -> str:
     )
 
 
+# --- Conversational layer: understand intent BEFORE filing a report --------
+
+_CONV_STATE: dict[str, dict[str, Any]] = {}
+_CONV_TTL_SECONDS = 30 * 60
+
+_INCIDENT_KEYWORDS = {
+    # English
+    "robbery", "robbed", "robber", "theft", "thief", "thieves", "steal",
+    "stole", "stolen", "snatch", "vandal", "fire", "burn", "smoke", "flood",
+    "flooded", "flooding", "attack", "fight", "fighting", "violence",
+    "violent", "beat", "beaten", "stab", "gun", "knife", "weapon", "shot",
+    "shooting", "accident", "crash", "emergency", "medical", "ambulance",
+    "collapsed", "suspicious", "strange", "kidnap", "rape", "assault",
+    "harass", "break-in", "break in", "burglary", "burglar", "arson",
+    "explosion", "drown", "riot", "protest", "dead", "body", "injured",
+    "injury", "wound", "bleeding", "unconscious", "missing", "lost child",
+    "trapped", "blocked road", "fallen tree", "collapsed building",
+    # French
+    "vol", "volé", "voleur", "incendie", "feu", "inondation", "inondé",
+    "agression", "agressé", "accident", "urgence", "suspect", "bizarre",
+    "cambriolage", "bagarre", "violence", "arme", "couteau", "blessé",
+    "saignement", "effondré", "noyade", "disparu", "coincé",
+    # Pidgin / local
+    "thief", "rogue", "wahala", "palava", "chakara",
+}
+
+_REPORT_INTENT = {
+    "i want to report", "i wanna report", "want to report",
+    "report an incident", "report something", "report a case",
+    "i have a report", "i need to report", "let me report",
+    "how do i report", "how to report", "how can i report",
+    "je veux signaler", "je veux faire un signalement",
+}
+
+_CAPABILITY_Q = {
+    "what can you do", "what do you do", "who are you", "who is this",
+    "how does this work", "how do you work", "how does it work",
+    "what is this", "what's this", "what is community watch",
+    "que peux-tu faire", "qui es-tu", "comment ça marche",
+}
+
+
+def _get_state(number: str) -> dict[str, Any]:
+    st = _CONV_STATE.get(number)
+    if st and (time.time() - st.get("ts", 0) < _CONV_TTL_SECONDS):
+        return st
+    return {}
+
+
+def _set_awaiting(number: str, reason: str = "details") -> None:
+    _CONV_STATE[number] = {"awaiting": reason, "ts": time.time()}
+
+
+def _clear_state(number: str) -> None:
+    _CONV_STATE.pop(number, None)
+
+
+def _contains_any(text_low: str, phrases: set[str]) -> bool:
+    return any(p in text_low for p in phrases)
+
+
+def _looks_like_incident(text: str) -> bool:
+    low = text.lower()
+    if _contains_any(low, _INCIDENT_KEYWORDS):
+        return True
+    # Long message with a concrete place cue is probably a real description
+    # even without a keyword match ("Two men near the bus stop…").
+    # NOTE: bare "at"/"in"/"area" are deliberately NOT cues — phrases like
+    # "i want to report an incident in my area" carry no real detail.
+    if len(text.split()) >= 6 and any(
+        cue in low for cue in (
+            " near ", " behind ", " opposite ", " next to ",
+            " along ", " around ", " street", " road", " market", " stop",
+            " quarter", " village", " town",
+            " près", " derrière ", " marché ",
+            " rue ", " route ", " quartier ",
+        )
+    ):
+        return True
+    return False
+
+
+def _is_vague_report_request(text: str) -> bool:
+    low = text.lower()
+    return _contains_any(low, _REPORT_INTENT) and not _looks_like_incident(text)
+
+
+def _is_capability_question(text: str) -> bool:
+    low = text.lower()
+    return _contains_any(low, _CAPABILITY_Q)
+
+
+def _is_generic_question(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped.endswith("?"):
+        return False
+    return not _looks_like_incident(text)
+
+
+def _ask_for_details_reply() -> str:
+    return (
+        "Of course — I'm listening. 🙏\n\n"
+        "Tell me in one message:\n"
+        "1️⃣ *What* happened?\n"
+        "2️⃣ *Where* exactly (street / area / landmark)?\n"
+        "3️⃣ *When* (now, 10 min ago, last night…)?\n\n"
+        "Example: _\"Two men snatched a bag near the bus stop on Oxford Street, 10 min ago.\"_"
+    )
+
+
+def _clarify_reply() -> str:
+    return (
+        "Hmm, I want to get this right. 🤔\n\n"
+        "Are you trying to *report an incident*? If yes, describe it like:\n"
+        "_\"Fire behind Kantamanto market, happening now.\"_\n\n"
+        "Or type *help* to see what I can do."
+    )
+
+
+def _capability_reply(name: str = "") -> str:
+    hello = f"Hello {name}! " if name else ""
+    return (
+        f"{hello}I'm *{settings.bot_name}*, your community safety assistant. 🕊️\n\n"
+        "Here's what I can do:\n"
+        "📝 Record anonymous incident reports (robbery, fire, flood, …)\n"
+        "📊 Send them to the community dashboard for review\n"
+        "💬 Answer questions about how reporting works\n\n"
+        "To report, just tell me what happened + where + when.\n"
+        "Type *help* for examples."
+    )
+
+
 def _confirmation_reply(incident_type: str, priority: str, report_id: int | None) -> str:
     ref = f" (ref #{report_id})" if report_id else ""
     return (
@@ -280,6 +412,38 @@ async def _handle_one_message(db: AsyncSession, msg: dict[str, Any], sender_name
         )
         return 0
 
+    # --- Conversational understanding (stateless + short-term context) ---
+    state = _get_state(from_number)
+    awaiting = state.get("awaiting")
+
+    # Capability / identity questions -> answer, never file a report.
+    if _is_capability_question(body):
+        _clear_state(from_number)
+        await _send_text(from_number, _capability_reply(sender_name))
+        return 0
+
+    # "I want to report…" with no actual details yet -> ask, don't file.
+    if _is_vague_report_request(body):
+        _set_awaiting(from_number, "details")
+        await _send_text(from_number, _ask_for_details_reply())
+        return 0
+
+    # We asked for details and the user is still vague -> guide again.
+    if awaiting and not _looks_like_incident(body):
+        if _is_generic_question(body):
+            await _send_text(from_number, _clarify_reply())
+        else:
+            await _send_text(from_number, _ask_for_details_reply())
+        return 0
+
+    # Chit-chat / unclear one-liners that carry no incident info ->
+    # hold a normal conversation instead of filing an empty "report".
+    if not awaiting and not _looks_like_incident(body) and len(body.split()) <= 12:
+        _set_awaiting(from_number, "details")
+        await _send_text(from_number, _clarify_reply())
+        return 0
+
+    _clear_state(from_number)
     try:
         result = await ingest_text(
             db,
