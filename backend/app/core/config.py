@@ -32,7 +32,16 @@ class Settings(BaseSettings):
         return [p.strip().strip('"').strip("'") for p in s.split(",") if p.strip()]
 
     app_name: str = "Peace-Watch API"
-    version: str = "0.2.1"
+    version: str = "0.3.0"
+
+    # Public display name used by the WhatsApp chatbot in replies.
+    # (The official display name shown at the top of the chat is set in the
+    # Meta dashboard, not here — this only controls how the bot signs itself.)
+    bot_name: str = "Community Watch"
+
+    # When False the API never auto-seeds demo reports on startup, so a
+    # cleared database stays cleared. Set DEMO_AUTO_SEED=false on Render.
+    demo_auto_seed: bool = True
 
     # Defaults to SQLite so the project runs out of the box.
     # Point this at PostgreSQL for production / Step 2, e.g.:

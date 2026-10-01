@@ -30,7 +30,8 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
     async with SessionLocal() as session:
-        await seed_demo(session)
+        if settings.demo_auto_seed:
+            await seed_demo(session)
 
 
 @asynccontextmanager
