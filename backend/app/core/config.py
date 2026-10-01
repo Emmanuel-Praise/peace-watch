@@ -32,7 +32,7 @@ class Settings(BaseSettings):
         return [p.strip().strip('"').strip("'") for p in s.split(",") if p.strip()]
 
     app_name: str = "Peace-Watch API"
-    version: str = "0.4.0"
+    version: str = "0.4.1"
 
     # Public display name used by the WhatsApp chatbot in replies.
     # (The official display name shown at the top of the chat is set in the
@@ -91,6 +91,15 @@ class Settings(BaseSettings):
     whisper_download_root: str = ""
     voice_max_bytes: int = 25 * 1024 * 1024
     voice_temp_dir: str = ""
+
+    # --- Speech-to-text (ElevenLabs Scribe, cloud) ---
+    # When set, voice notes are transcribed via ElevenLabs instead of the
+    # local faster-whisper model — this is what makes voice reports work on
+    # small hosts (e.g. Render free tier) that can't load Whisper locally.
+    elevenlabs_api_key: str = ""
+    elevenlabs_stt_model: str = "scribe_v2"
+    elevenlabs_base_url: str = "https://api.elevenlabs.io"
+    elevenlabs_timeout_seconds: int = 60
 
     # --- WhatsApp / Meta Cloud API webhook ---
     # Public callback URL: https://<your-domain>/api/whatsapp/webhook

@@ -1,18 +1,31 @@
 """
-Speech-to-text via faster-whisper.
+Speech-to-text for voice reports.
 
-The model is loaded lazily the first time audio arrives. Temporary audio
-files are written to disk and unlinked immediately after transcription.
+Two providers, in priority order:
+
+1. ElevenLabs Scribe (cloud) — used whenever ELEVENLABS_API_KEY is set.
+   Needs no local model, so voice notes work even on tiny hosts
+   (e.g. Render's free tier).
+2. faster-whisper (local) — fallback when no cloud key is configured.
+   The model is loaded lazily the first time audio arrives.
+
+Temporary audio files (local path) are written to disk and unlinked
+immediately after transcription.
 """
 
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
 import threading
 from pathlib import Path
 
+import httpx
+
 from ..core.config import settings
+
+logger = logging.getLogger("peacewatch.voice")
 
 _lock = threading.Lock()
 _whisper_model = None
@@ -40,6 +53,71 @@ class TranscriptionError(Exception):
     pass
 
 
+# ISO-639-1 (our config) -> ISO-639-3 (ElevenLabs language_code).
+_LANG_MAP = {
+    "en": "eng",
+    "fr": "fra",
+    "es": "spa",
+    "de": "deu",
+    "pt": "por",
+    "it": "ita",
+    "ar": "ara",
+    "ha": "hau",
+    "yo": "yor",
+    "ig": "ibo",
+    "sw": "swa",
+}
+
+
+def _elevenlabs_language() -> str | None:
+    value = (settings.whisper_language or "").strip().lower()
+    if value in ("", "auto", "multilingual"):
+        return None  # let Scribe auto-detect
+    return _LANG_MAP.get(value, value)
+
+
+def transcribe_elevenlabs(audio_bytes: bytes, suffix: str = ".ogg") -> dict:
+    """Transcribe via ElevenLabs Scribe (cloud). Raises TranscriptionError."""
+    if not settings.elevenlabs_api_key:
+        raise TranscriptionError("ElevenLabs API key is not configured.")
+    if not audio_bytes:
+        raise TranscriptionError("No audio data received.")
+
+    url = settings.elevenlabs_base_url.rstrip("/") + "/v1/speech-to-text"
+    filename = f"voice{suffix if suffix.startswith('.') else '.ogg'}"
+    form: dict[str, str] = {"model_id": settings.elevenlabs_stt_model or "scribe_v2"}
+    lang = _elevenlabs_language()
+    if lang:
+        form["language_code"] = lang
+    try:
+        with httpx.Client(timeout=settings.elevenlabs_timeout_seconds) as client:
+            resp = client.post(
+                url,
+                headers={"xi-api-key": settings.elevenlabs_api_key},
+                data=form,
+                files={"file": (filename, audio_bytes, "audio/ogg")},
+            )
+    except httpx.HTTPError as exc:
+        raise TranscriptionError(f"ElevenLabs request failed: {exc}") from exc
+    if resp.status_code == 401:
+        raise TranscriptionError("ElevenLabs rejected the API key (401).")
+    if resp.status_code == 402:
+        raise TranscriptionError("ElevenLabs out of credits (402).")
+    if resp.status_code >= 400:
+        raise TranscriptionError(f"ElevenLabs error {resp.status_code}: {resp.text[:300]}")
+    try:
+        payload = resp.json()
+    except ValueError as exc:
+        raise TranscriptionError(f"ElevenLabs returned invalid JSON: {exc}") from exc
+    return {
+        "text": str(payload.get("text") or "").strip(),
+        "language": payload.get("language_code"),
+        "language_probability": float(payload.get("language_probability") or 0.0),
+        "duration": None,
+        "provider": "elevenlabs",
+    }
+
+
 def _language_arg() -> str | None:
     value = (settings.whisper_language or "").strip().lower()
     if value in ("", "auto", "multilingual"):
@@ -49,14 +127,20 @@ def _language_arg() -> str | None:
 
 def transcribe_from_bytes(audio_bytes: bytes, suffix: str = ".wav") -> dict:
     """
-    Transcribe audio bytes via faster-whisper.
+    Transcribe audio bytes to text.
 
-    The bytes are written to a temp file, transcribed, and the temp file is
-    deleted before returning. Returns {text, language, language_probability,
-    duration}.
+    Uses ElevenLabs Scribe when ELEVENLABS_API_KEY is set (works anywhere),
+    otherwise falls back to the local faster-whisper model.
+    Returns {text, language, language_probability, duration}.
     """
     if not audio_bytes or len(audio_bytes) == 0:
         raise TranscriptionError("No audio data received.")
+
+    if settings.elevenlabs_api_key:
+        try:
+            return transcribe_elevenlabs(audio_bytes, suffix)
+        except TranscriptionError:
+            logger.warning("ElevenLabs transcription failed, trying local Whisper.", exc_info=True)
 
     if not suffix or not suffix.startswith("."):
         suffix = ".wav"
@@ -85,6 +169,7 @@ def transcribe_from_bytes(audio_bytes: bytes, suffix: str = ".wav") -> dict:
             "language": info.language,
             "language_probability": float(info.language_probability or 0.0),
             "duration": float(info.duration or 0.0),
+            "provider": "whisper",
         }
     except TranscriptionError:
         raise
