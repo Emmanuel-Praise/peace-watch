@@ -32,7 +32,7 @@ class Settings(BaseSettings):
         return [p.strip().strip('"').strip("'") for p in s.split(",") if p.strip()]
 
     app_name: str = "Peace-Watch API"
-    version: str = "0.2.0"
+    version: str = "0.2.1"
 
     # Defaults to SQLite so the project runs out of the box.
     # Point this at PostgreSQL for production / Step 2, e.g.:

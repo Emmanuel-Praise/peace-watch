@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: peace-watch-backend
+    runtime: python
+    # Code lives in backend/, so Render must run commands from there.
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: CORS_ALLOW_ALL
+        value: true
+      # Must match the "Verify token" you type in Meta's webhook settings.
+      - key: WHATSAPP_VERIFY_TOKEN
+        value: peacewatch

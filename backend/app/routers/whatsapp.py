@@ -53,8 +53,22 @@ async def verify_webhook(
     hub_mode: str | None = Query(default=None, alias="hub.mode"),
     hub_verify_token: str | None = Query(default=None, alias="hub.verify_token"),
     hub_challenge: str | None = Query(default=None, alias="hub.challenge"),
-) -> Response:
-    """Answer Meta's webhook verification handshake."""
+):
+    """Answer Meta's webhook verification handshake.
+
+    - With ?hub.mode=subscribe&hub.verify_token=...&hub.challenge=X (Meta's
+      handshake): echoes X as plain text when the token matches, else 403.
+    - With no query params (human opening the URL in a browser): returns a
+      friendly JSON status with 200 so you can see the webhook is live
+      instead of a scary "Not Found".
+    """
+    if hub_mode is None and hub_verify_token is None and hub_challenge is None:
+        return {
+            "status": "ok",
+            "service": "whatsapp webhook",
+            "hint": "Add ?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=123 to test verification.",
+            "verify_token_configured": bool(settings.whatsapp_verify_token),
+        }
     if (
         hub_mode == "subscribe"
         and hub_verify_token == settings.whatsapp_verify_token
