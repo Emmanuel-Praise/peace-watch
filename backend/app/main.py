@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import settings
 from .core.database import Base, SessionLocal, engine
-from .models import Alert, Cluster, Report  # noqa: F401  (register tables)
+from .models import Alert, Cluster, QuarterHead, Report  # noqa: F401  (register tables)
 from .routers import api_router
 from .services import seed_demo
 

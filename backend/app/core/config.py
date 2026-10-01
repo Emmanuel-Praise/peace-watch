@@ -32,7 +32,7 @@ class Settings(BaseSettings):
         return [p.strip().strip('"').strip("'") for p in s.split(",") if p.strip()]
 
     app_name: str = "Peace-Watch API"
-    version: str = "0.3.1"
+    version: str = "0.4.0"
 
     # Public display name used by the WhatsApp chatbot in replies.
     # (The official display name shown at the top of the chat is set in the

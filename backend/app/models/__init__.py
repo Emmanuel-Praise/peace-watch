@@ -8,6 +8,7 @@ from .enums import (
     ReportType,
     SeverityLevel,
 )
+from .quarter_head import QuarterHead
 from .report import Report
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "Cluster",
     "ClusterPriority",
     "ClusterStatus",
+    "QuarterHead",
     "Report",
     "ReportStatus",
     "ReportType",
