@@ -16,7 +16,10 @@ import type {
   SystemStatus,
 } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8001/api'
+// Always talk to the hosted backend. No local fallback: if this env var is
+// missing (e.g. a misconfigured build) we fail loudly instead of silently
+// reading/writing a local development database.
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://peace-watch-backend.onrender.com/api'
 
 export class ApiError extends Error {
   status: number
