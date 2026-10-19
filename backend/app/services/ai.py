@@ -93,17 +93,6 @@ def _provider_configs() -> list[dict[str, Any]]:
     return providers
 
 
-def ai_status() -> dict[str, Any]:
-    """Report which AI providers are configured (never leaks keys)."""
-    return {
-        "openrouter_configured": bool(settings.openrouter_api_key),
-        "openrouter_model": settings.openrouter_model or None,
-        "nvidia_configured": bool(settings.nvidia_api_key),
-        "nvidia_model": settings.nvidia_model or None,
-        "whisper_configured": True,  # local, always available
-    }
-
-
 _INCIDENT_TYPE_DEFS = "\n".join(
     f"- {t.value}: {t.name.replace('_', ' ').title()}" for t in ReportType
 )
