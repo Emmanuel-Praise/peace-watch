@@ -1,17 +1,27 @@
-import type { AlertStatus, ReportStatus, ReportType, Severity, Source } from '../types'
+import type { QuarterHeadStatus, ReportStatus, ReportType, Severity, Source } from '../types'
 
 export const SOURCE_LABELS: Record<Source, string> = {
-  manual: 'Manual',
-  text: 'Text message',
+  manual: 'Dashboard',
+  text: 'SMS',
   voice: 'Voice note',
   whatsapp: 'WhatsApp',
 }
 
-export const LANGUAGE_LABELS: Record<string, string> = {
-  auto: 'Auto-detect',
-  en: 'English',
-  fr: 'French',
-  pidgin: 'Cameroonian Pidgin',
+export function sourceLabel(source: string): string {
+  return (
+    SOURCE_LABELS[source as Source] ??
+    ({ whatsapp_voice: 'WhatsApp · voice' }[source] ??
+      source
+        .split('_')
+        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .join(' '))
+  )
+}
+
+export const QH_STATUS_LABELS: Record<QuarterHeadStatus, string> = {
+  pending: 'Pending',
+  verified: 'Verified',
+  rejected: 'Rejected',
 }
 
 export function formatCoords(lat: number | null, lng: number | null): string {
@@ -44,26 +54,6 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   dismissed: 'Dismissed',
 }
 
-export const ALERT_STATUS_LABELS: Record<AlertStatus, string> = {
-  new: 'New',
-  acknowledged: 'Acknowledged',
-  resolved: 'Resolved',
-}
-
-export const PRIORITY_COLORS: Record<string, { fill: string; text: string; dot: string }> = {
-  low: { fill: '#2563eb', text: 'text-blue-700', dot: 'bg-blue-600' },
-  medium: { fill: '#a57145', text: 'text-brand-700', dot: 'bg-brand-500' },
-  high: { fill: '#dc2626', text: 'text-red-600', dot: 'bg-red-600' },
-}
-
-/** Map bounding box used for the incident map (demo region). */
-export const MAP_BOUNDS = {
-  minLat: 5.4,
-  maxLat: 6.1,
-  minLng: -0.45,
-  maxLng: 0.35,
-}
-
 export function formatDateTime(value: string): string {
   const d = new Date(value.endsWith('Z') ? value : `${value}Z`)
   if (Number.isNaN(d.getTime())) return value
@@ -86,14 +76,4 @@ export function relativeTime(value: string): string {
   if (hours < 24) return `${hours}h ago`
   const days = Math.round(hours / 24)
   return `${days}d ago`
-}
-
-export function isToday(value: string): boolean {
-  const d = new Date(value.endsWith('Z') ? value : `${value}Z`)
-  const now = new Date()
-  return (
-    d.getUTCFullYear() === now.getUTCFullYear() &&
-    d.getUTCMonth() === now.getUTCMonth() &&
-    d.getUTCDate() === now.getUTCDate()
-  )
 }

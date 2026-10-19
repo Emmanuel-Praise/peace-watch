@@ -17,9 +17,7 @@ export default {
           900: '#3d2518',
         },
       },
-      boxShadow: {
-        glow: '0 1px 4px rgba(106, 72, 44, 0.20)',
-      },
+      boxShadow: {},
     },
   },
   plugins: [],

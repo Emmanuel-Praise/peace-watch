@@ -39,10 +39,6 @@ class Settings(BaseSettings):
     # Meta dashboard, not here — this only controls how the bot signs itself.)
     bot_name: str = "Community Watch"
 
-    # When False the API never auto-seeds demo reports on startup, so a
-    # cleared database stays cleared. Set DEMO_AUTO_SEED=false on Render.
-    demo_auto_seed: bool = True
-
     # Defaults to SQLite so the project runs out of the box.
     # Point this at PostgreSQL for production / Step 2, e.g.:
     #   postgresql+asyncpg://peacewatch:password@localhost:5432/peacewatch
@@ -62,12 +58,6 @@ class Settings(BaseSettings):
     # origin (allow_credentials is then disabled). Set to false and rely on
     # cors_origins for stricter, production-style CORS control.
     cors_allow_all: bool = True
-
-    # Corroboration / clustering parameters.
-    cluster_radius_km: float = 2.0
-    cluster_time_window_hours: int = 6
-    cluster_min_reports: int = 2
-    cluster_active_hours: int = 24
 
     # --- AI extraction (OpenRouter, primary) ---
     openrouter_api_key: str = ""

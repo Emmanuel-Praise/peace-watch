@@ -3,10 +3,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
-from ..models import Cluster, Report
+from ..models import Report
 from ..models.report import utcnow
-from ..schemas import ReportCreate, ReportLocationUpdate, ReportOut, ReportUpdateStatus
-from ..services.clustering import process_report, refresh_cluster
+from ..schemas import (
+    QuarterHeadOut,
+    ReportCreate,
+    ReportLocationUpdate,
+    ReportOut,
+    ReportUpdateStatus,
+)
+from ..services.notify import find_matching_heads
+from .quarter_heads import _out as quarter_head_out
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -29,8 +36,6 @@ async def create_report(
         source="manual",
     )
     session.add(report)
-    await session.flush()
-    await process_report(session, report)
     await session.commit()
     await session.refresh(report)
     return report
@@ -40,7 +45,6 @@ async def create_report(
 async def list_reports(
     type: str | None = Query(default=None),
     status_: str | None = Query(default=None, alias="status"),
-    cluster_id: int | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_db),
@@ -50,8 +54,6 @@ async def list_reports(
         stmt = stmt.where(Report.type == type)
     if status_:
         stmt = stmt.where(Report.status == status_)
-    if cluster_id is not None:
-        stmt = stmt.where(Report.cluster_id == cluster_id)
     result = await session.execute(stmt)
     return list(result.scalars())
 
@@ -64,6 +66,18 @@ async def get_report(
     if report is None:
         raise HTTPException(status_code=404, detail="Report not found")
     return report
+
+
+@router.get("/{report_id}/matching-heads", response_model=list[QuarterHeadOut])
+async def matching_heads(
+    report_id: int, session: AsyncSession = Depends(get_db)
+) -> list[QuarterHeadOut]:
+    """Routing preview: verified quarter heads that receive this report."""
+    report = await session.get(Report, report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    heads = await find_matching_heads(session, report)
+    return [quarter_head_out(h) for h in heads]
 
 
 @router.patch("/{report_id}/status", response_model=ReportOut)
@@ -83,13 +97,6 @@ async def update_report_status(
         )
 
     report.status = new_status
-    await session.flush()
-
-    if report.cluster_id is not None:
-        cluster = await session.get(Cluster, report.cluster_id)
-        if cluster is not None:
-            await refresh_cluster(session, cluster)
-
     await session.commit()
     await session.refresh(report)
     return report
@@ -126,16 +133,6 @@ async def update_report_location(
     report.latitude = body.latitude
     report.longitude = body.longitude
 
-    if report.cluster_id is not None:
-        cluster = await session.get(Cluster, report.cluster_id)
-        if cluster is not None:
-            await refresh_cluster(session, cluster)
-            report.cluster_id = cluster.id
-
-    await session.flush()
-    moved = await process_report(session, report)
     await session.commit()
     await session.refresh(report)
-    if moved is not None:
-        report.cluster_id = moved.id
     return report

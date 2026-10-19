@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, Float, String, Text
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
 from sqlalchemy.ext.mutable import MutableDict
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
 from ..core.database import Base
@@ -58,8 +58,3 @@ class Report(Base):
     ai_processed: Mapped[bool] = mapped_column(Boolean, default=False)
     ai_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     detected_language: Mapped[str | None] = mapped_column(String(10), nullable=True)
-
-    cluster_id: Mapped[int | None] = mapped_column(
-        ForeignKey("clusters.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-    cluster: Mapped["Cluster | None"] = relationship(back_populates="reports")

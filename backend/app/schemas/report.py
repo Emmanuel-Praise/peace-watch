@@ -65,6 +65,12 @@ class ReportLocationUpdate(BaseModel):
         return round(value, 6)
 
 
+class IngestOutcome(BaseModel):
+    processed: bool = False
+    model: str | None = None
+    error: str | None = None
+
+
 class ReportOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,9 +83,8 @@ class ReportOut(BaseModel):
     status: ReportStatus
     occurred_at: datetime
     created_at: datetime
-    cluster_id: int | None = None
 
-    # Step 2 AI pipeline fields
+    # AI pipeline fields
     transcript: str | None = None
     ai_summary: str | None = None
     details: dict | None = None
@@ -90,3 +95,10 @@ class ReportOut(BaseModel):
     ai_error: str | None = None
     detected_language: str | None = None
     anonymous_id_sha256: str | None = None
+
+
+class IngestResult(BaseModel):
+    report: ReportOut
+    ai: IngestOutcome
+    source: str
+    message: str

@@ -24,20 +24,3 @@ class ReportStatus(str, Enum):
     UNDER_REVIEW = "under_review"
     VERIFIED = "verified"
     DISMISSED = "dismissed"
-
-
-class ClusterPriority(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-
-
-class ClusterStatus(str, Enum):
-    ACTIVE = "active"
-    MONITORING = "monitoring"
-
-
-class AlertStatus(str, Enum):
-    NEW = "new"
-    ACKNOWLEDGED = "acknowledged"
-    RESOLVED = "resolved"

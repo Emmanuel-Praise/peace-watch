@@ -1,22 +1,16 @@
-import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import Sidebar from './Sidebar'
-import TopBar from './TopBar'
-import ReportForm from './ReportForm'
+import Sidebar, { MobileBar } from './Sidebar'
 
 export default function Layout() {
-  const [formOpen, setFormOpen] = useState(false)
-
   return (
-    <div className="flex h-screen overflow-hidden bg-white text-neutral-900">
+    <div className="flex min-h-dvh bg-[#faf9f7] text-neutral-900 md:h-dvh md:min-h-0 md:flex-row md:overflow-hidden">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar onNewReport={() => setFormOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
+        <MobileBar />
+        <main className="min-w-0 flex-1">
           <Outlet />
         </main>
       </div>
-      {formOpen && <ReportForm onClose={() => setFormOpen(false)} onCreated={() => {}} />}
     </div>
   )
 }

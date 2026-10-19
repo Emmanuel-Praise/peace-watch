@@ -24,6 +24,15 @@ export const HomeIcon = (p: IconProps) => (
   </svg>
 )
 
+export const UsersIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="9" cy="7" r="3" />
+    <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+    <path d="M16 3.5a3 3 0 0 1 0 7" />
+    <path d="M17 17.5a4 4 0 0 1 4 3.5" />
+  </svg>
+)
+
 export const FileIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

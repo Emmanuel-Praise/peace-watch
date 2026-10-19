@@ -17,9 +17,6 @@ services:
         value: peacewatch
       - key: BOT_NAME
         value: Community Watch
-      # Keeps a cleared DB cleared (no auto-reseed of demo reports).
-      - key: DEMO_AUTO_SEED
-        value: false
       # Set these in Render → Environment (secrets, never committed):
       - key: WHATSAPP_ACCESS_TOKEN
         sync: false

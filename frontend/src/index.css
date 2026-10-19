@@ -7,7 +7,7 @@
     @apply antialiased;
   }
   body {
-    @apply bg-white text-neutral-900;
+    @apply bg-[#faf9f7] text-neutral-900;
     font-family:
       'Inter',
       ui-sans-serif,
@@ -22,10 +22,13 @@
 
 @layer components {
   .card {
-    @apply rounded-xl border border-neutral-200 bg-white shadow-sm shadow-neutral-900/5;
+    @apply rounded-xl border border-neutral-200/90 bg-white shadow-sm shadow-neutral-900/5;
   }
   .card-title {
     @apply text-sm font-semibold text-neutral-900;
+  }
+  .page-title {
+    @apply text-xl font-semibold tracking-tight text-neutral-900 md:text-2xl;
   }
   .btn {
     @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors;
@@ -43,26 +46,19 @@
     @apply btn text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900;
   }
   .input {
-    @apply w-full rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-colors focus:border-brand-600 focus:ring-1 focus:ring-brand-600;
+    @apply w-full rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-colors focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900;
   }
   .label {
     @apply mb-1 block text-xs font-medium text-neutral-600;
   }
   .th {
-    @apply border-b border-neutral-200 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500;
+    @apply border-b border-neutral-200 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400;
   }
   .td {
-    @apply border-b border-neutral-200/70 px-3 py-2.5 text-sm text-neutral-800;
+    @apply border-b border-neutral-200/60 px-3 py-2.5 text-sm text-neutral-800;
   }
-  .live-dot {
-    @apply relative flex h-2 w-2;
-  }
-  .live-dot::after {
-    content: '';
-    @apply absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75;
-  }
-  .live-dot-core {
-    @apply relative inline-flex h-2 w-2 rounded-full bg-emerald-600;
+  .num {
+    @apply tabular-nums;
   }
 }
 
